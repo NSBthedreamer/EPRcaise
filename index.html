@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EPR - Caisse commune</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1F4E79">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f5f7fa;--card:#fff;--tx:#1b2430;--mut:#6b7686;--acc:#1F4E79;--acc2:#e8eef4;--bd:#d5dce5;--ok:#1d7a46;--ko:#b3261e;--wa:#a86100}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#12171d;--card:#1b222b;--tx:#e8edf3;--mut:#9aa6b5;--acc:#6aa8e0;--acc2:#233140;--bd:#33404e;--ok:#5fcf8b;--ko:#ff8a80;--wa:#f0b35a}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#12171d;--card:#1b222b;--tx:#e8edf3;--mut:#9aa6b5;--acc:#6aa8e0;--acc2:#233140;--bd:#33404e;--ok:#5fcf8b;--ko:#ff8a80;--wa:#f0b35a}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:var(--acc);color:#fff;padding:18px 16px}
+@media (prefers-color-scheme:dark){header{color:#0d1318}}
+header h1{margin:0;font-size:19px}header p{margin:2px 0 0;font-size:13px;opacity:.9}
+main{max-width:720px;margin:0 auto;padding:12px}
+nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+nav button{flex:0 0 auto;padding:8px 12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:20px;font:inherit;cursor:pointer}
+nav button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+@media (prefers-color-scheme:dark){nav button.on{color:#0d1318}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+h2{font-size:15px;margin:0 0 10px;color:var(--acc)}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 3px}
+input,textarea,select{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:480px){.row{grid-template-columns:1fr}}
+.opts{display:flex;gap:16px;flex-wrap:wrap;margin-top:4px}.opts label{display:flex;gap:6px;align-items:center;margin:0;color:var(--tx);font-size:15px}.opts input{width:auto}
+.hide{display:none}
+canvas{width:100%;height:110px;border:1px dashed var(--bd);border-radius:8px;background:#fff;touch-action:none;display:block}
+.btn{padding:11px 16px;border:0;border-radius:8px;background:var(--acc);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+@media (prefers-color-scheme:dark){.btn{color:#0d1318}}
+.btn.sec{background:var(--acc2);color:var(--tx)}.btn.ok{background:var(--ok)}.btn.ko{background:var(--ko)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tag{display:inline-block;padding:2px 9px;border-radius:12px;font-size:12px;font-weight:600;background:var(--acc2)}
+.s-accorde{color:var(--ok)}.s-refuse{color:var(--ko)}.s-attente_garant,.s-attente_decision{color:var(--wa)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:14px;margin:8px 0}.kv span:nth-child(odd){color:var(--mut)}
+.sig{height:50px;background:#fff;border-radius:6px;border:1px solid var(--bd)}
+.hit{display:block;width:100%;text-align:left;margin-top:4px;padding:8px;background:var(--acc2);color:var(--tx);border:0;border-radius:8px;font:inherit;cursor:pointer}
+.err{color:var(--ko);font-size:13px;margin-top:8px}.empty{color:var(--mut);text-align:center;padding:24px 0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.stats div{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center}.stats b{display:block;font-size:17px;color:var(--acc)}.stats small{color:var(--mut)}
+</style>
+</head>
+<body>
+<header><h1>EPR - Caisse commune</h1><p>Demandes de prêt entre membres</p></header>
+<main>
+<section id="auth" class="hide"><div class="card"><h2>Connexion</h2>
+<div id="cfgwarn" class="err hide">Configuration Firebase manquante : collez votre firebaseConfig dans index.html (voir LISEZMOI.md).</div>
+<div id="nmwrap" class="hide"><label>Nom affiché (pour la création de compte)</label><input id="aname" autocomplete="name"></div>
+<label>Email</label><input id="aemail" type="email" autocomplete="email">
+<label>Mot de passe</label><input id="apwd" type="password" autocomplete="current-password">
+<div id="aerr" class="err"></div>
+<div class="btns"><button class="btn" id="bin">Se connecter</button><button class="btn sec" id="bup">Créer un compte</button></div>
+<div class="btns"><button class="btn sec" id="bgo">Continuer avec Google</button><button class="btn sec" id="breset">Mot de passe oublié</button></div></div></section>
+<div id="bar" class="hide" style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:var(--mut)"><span id="who"></span><span><button class="btn sec" id="bpw" style="padding:6px 10px">Mot de passe</button> <button class="btn sec" id="bout" style="padding:6px 10px">Déconnexion</button></span></div>
+<div id="app" class="hide">
+<nav id="nav"></nav>
+<div id="msg" class="err"></div>
+
+<section id="v-new">
+<form id="f" onsubmit="return false">
+<div class="card"><h2>1. Informations personnelles</h2>
+<div class="row"><div><label>Nom *</label><input id="nom"></div><div><label>Prénom(s) *</label><input id="prenom"></div></div>
+<div class="row"><div><label>Téléphone *</label><input id="tel" type="tel"></div><div><label>Adresse / lieu d'habitation *</label><input id="adr"></div></div>
+<label>Êtes-vous membre du groupe ? *</label>
+<div class="opts"><label><input type="radio" name="membre" value="oui" checked> Membre</label><label><input type="radio" name="membre" value="non"> Non membre</label></div></div>
+
+<div class="card"><h2>2. Détails du prêt</h2>
+<div class="row"><div><label>Montant demandé *</label><input id="montant" type="number" min="1" inputmode="decimal"></div><div><label>Objet du prêt *</label><input id="objet" placeholder="Problème personnel ou projet"></div></div>
+<div class="row"><div><label>Date souhaitée de réception *</label><input id="d1" type="date"></div><div><label>Date de remboursement prévue *</label><input id="d2" type="date"></div></div>
+<label>Mode de remboursement *</label>
+<div class="opts"><label><input type="radio" name="mode" value="unique" checked> En une fois</label><label><input type="radio" name="mode" value="echelonne"> Échelonné</label></div>
+<div id="ech" class="hide row"><div><label>Nombre de tranches</label><input id="tranches" type="number" min="2"></div><div><label>Fréquence</label><select id="freq"><option>Hebdomadaire</option><option selected>Mensuelle</option><option>Autre</option></select></div></div></div>
+
+<div id="gar" class="card hide"><h2>3. Garant (membre du groupe)</h2>
+<label>Rechercher le garant *</label><input id="gs" placeholder="Tapez un nom..." autocomplete="off">
+<div id="hits"></div><div id="gpick" style="margin-top:6px;font-weight:600"></div>
+<label>Téléphone du garant</label><input id="gtel" type="tel"></div>
+
+<div class="card"><h2>Historique et remarques</h2>
+<label>Avez-vous un prêt non remboursé en cours ?</label>
+<div class="opts"><label><input type="radio" name="enc" value="non" checked> Non</label><label><input type="radio" name="enc" value="oui"> Oui</label></div>
+<div id="solde" class="hide"><label>Montant restant dû</label><input id="restant" type="number" min="0"></div>
+<label>Commentaires</label><textarea id="com" rows="3"></textarea></div>
+
+<div class="card"><h2>Signature du demandeur *</h2><canvas id="pad1"></canvas>
+<div class="btns"><button type="button" class="btn sec" onclick="pad1.clear()">Effacer</button></div></div>
+<div id="ferr" class="err"></div>
+<div class="btns"><button type="button" class="btn" id="send">Envoyer la demande</button></div>
+</form>
+</section>
+
+<section id="v-mine" class="hide"></section>
+<section id="v-guard" class="hide"></section>
+<section id="v-all" class="hide"></section>
+</div>
+</main>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,GoogleAuthProvider,signInWithPopup,signOut,sendPasswordResetEmail,updateProfile,linkWithCredential,EmailAuthProvider,updatePassword} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,collection,doc,setDoc,updateDoc,getDoc,getDocs,onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// >>> COLLEZ ICI le firebaseConfig de votre projet (Console Firebase > Paramètres > Vos applications)
+const firebaseConfig = {
+  apiKey: "AIzaSyCCRO5K7bN8vQ91uWUsk9v-GjHMh54tTQo",
+  authDomain: "epr-caisse.firebaseapp.com",
+  projectId: "epr-caisse",
+  storageBucket: "epr-caisse.firebasestorage.app",
+  messagingSenderId: "1041225658915",
+  appId: "1:1041225658915:web:fb5d10149adff52fd4f796",
+  measurementId: "G-RB0GV8JD0C"
+};
+const configured = firebaseConfig.apiKey && firebaseConfig.apiKey!=="COLLER_ICI";
+const app = configured ? initializeApp(firebaseConfig) : null;
+const auth = app ? getAuth(app) : null, fs = app ? getFirestore(app) : null;
+
+// Petite couche qui reproduit l'API utilisée par l'écran, branchée sur Firestore
+const db={collection:p=>({
+  doc:id=>({set:d=>setDoc(doc(fs,p,id),d),update:d=>updateDoc(doc(fs,p,id),d)}),
+  onSnapshot:(next,err)=>onSnapshot(collection(fs,p),s=>next({docs:s.docs.map(d=>({id:d.id,data:()=>d.data()}))}),err)})};
+const user={search:async q=>{const s=await getDocs(collection(fs,'users'));q=q.toLowerCase();
+  return s.docs.filter(d=>d.id!==me.id&&(d.data().name||'').toLowerCase().includes(q)).map(d=>({id:d.id,name:d.data().name}))}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ST={attente_garant:'En attente du garant',attente_decision:'En attente de décision',accorde:'Accordé',refuse:'Refusé'};
+const fmt=n=>Number(n||0).toLocaleString('fr-FR');
+let me,admin=false,loans=[],tab='new',garant=null,unsub=null;
+
+function makePad(cv){
+  const x=cv.getContext('2d');let dr=false,dirty=false;
+  function size(){cv.width=cv.clientWidth*2;cv.height=cv.clientHeight*2;x.lineWidth=4;x.lineCap='round';x.strokeStyle='#111'}
+  size();
+  const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+  cv.addEventListener('pointerdown',e=>{dr=true;cv.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...pt(e))});
+  cv.addEventListener('pointermove',e=>{if(!dr)return;x.lineTo(...pt(e));x.stroke();dirty=true});
+  ['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,()=>dr=false));
+  return{clear(){x.clearRect(0,0,cv.width,cv.height);dirty=false},empty:()=>!dirty,
+    data(){const t=document.createElement('canvas');t.width=300;t.height=Math.round(300*cv.height/cv.width);t.getContext('2d').drawImage(cv,0,0,t.width,t.height);return t.toDataURL('image/png')}};
+}
+const pad1=makePad($('pad1'));window.pad1=pad1;
+
+document.querySelectorAll('input[name=membre]').forEach(r=>r.onchange=()=>{$('gar').classList.toggle('hide',document.querySelector('input[name=membre]:checked').value==='oui')});
+document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=()=>{$('ech').classList.toggle('hide',document.querySelector('input[name=mode]:checked').value!=='echelonne')});
+document.querySelectorAll('input[name=enc]').forEach(r=>r.onchange=()=>{$('solde').classList.toggle('hide',document.querySelector('input[name=enc]:checked').value!=='oui')});
+
+let st;$('gs').oninput=()=>{clearTimeout(st);st=setTimeout(async()=>{
+  const q=$('gs').value.trim();if(!user||!user.search||q.length<1){$('hits').innerHTML='';return}
+  try{const h=await user.search(q);$('hits').innerHTML=(h||[]).slice(0,5).map((p,i)=>`<button type="button" class="hit" data-i="${i}">${esc(p.name||'Membre')}</button>`).join('')||'<div class="empty">Aucun membre trouvé</div>';
+    $('hits').querySelectorAll('.hit').forEach(b=>b.onclick=()=>{const p=h[+b.dataset.i];garant={id:p.id,nom:p.name||'Membre'};$('gpick').textContent='Garant choisi : '+garant.nom;$('hits').innerHTML='';$('gs').value=''})}catch(e){$('hits').innerHTML=''}
+},250)};
+
+$('send').onclick=async()=>{
+  const v=id=>$(id).value.trim(),membre=document.querySelector('input[name=membre]:checked').value==='oui',mode=document.querySelector('input[name=mode]:checked').value;
+  let err='';
+  if(!v('nom')||!v('prenom')||!v('tel')||!v('adr'))err='Complétez vos informations personnelles.';
+  else if(!(+v('montant')>0)||!v('objet')||!v('d1')||!v('d2'))err='Complétez le montant, l\'objet et les dates.';
+  else if(v('d2')<v('d1'))err='La date de remboursement doit suivre la date de réception.';
+  else if(mode==='echelonne'&&!(+v('tranches')>=2))err='Indiquez le nombre de tranches (2 minimum).';
+  else if(!membre&&!garant)err='Choisissez un garant parmi les membres.';
+  else if(pad1.empty())err='Veuillez signer dans le cadre.';
+  $('ferr').textContent=err;if(err)return;
+  const loan={uid:me.id,nom:v('nom'),prenom:v('prenom'),tel:v('tel'),adresse:v('adr'),membre,montant:+v('montant'),objet:v('objet'),dateRecep:v('d1'),dateRemb:v('d2'),mode,
+    tranches:mode==='echelonne'?+v('tranches'):null,freq:mode==='echelonne'?$('freq').value:null,
+    garantId:membre?null:garant.id,garantNom:membre?null:garant.nom,garantTel:membre?null:v('gtel'),
+    enCours:document.querySelector('input[name=enc]:checked').value==='oui',restant:+v('restant')||0,commentaire:v('com'),
+    sigDemandeur:pad1.data(),sigGarant:null,status:membre?'attente_decision':'attente_garant',createdAt:Date.now()};
+  try{$('send').disabled=true;await db.collection('loans').doc(crypto.randomUUID()).set(loan);
+    $('f').reset();pad1.clear();garant=null;$('gpick').textContent='';['gar','ech','solde'].forEach(i=>$(i).classList.add('hide'));
+    msg(membre?'Demande envoyée. Le groupe va statuer.':'Demande envoyée. Le garant doit maintenant signer depuis son espace.',true);go('mine')}
+  catch(e){$('ferr').textContent='Envoi impossible : '+(e.message||e.code)}finally{$('send').disabled=false}
+};
+
+function msg(t,ok){const m=$('msg');m.style.color=ok?'var(--ok)':'var(--ko)';m.textContent=t;if(ok)setTimeout(()=>m.textContent='',5000)}
+
+function card(l,mode){
+  const g=l.garantId?`<span>Garant</span><span>${esc(l.garantNom)} ${l.garantTel?'· '+esc(l.garantTel):''}</span>`:'';
+  let h=`<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(l.prenom)} ${esc(l.nom)}</b><span class="tag s-${l.status}">${ST[l.status]}</span></div>
+  <div class="kv"><span>Montant</span><span><b>${fmt(l.montant)}</b></span><span>Objet</span><span>${esc(l.objet)}</span>
+  <span>Réception</span><span>${esc(l.dateRecep)}</span><span>Remboursement</span><span>${esc(l.dateRemb)} · ${l.mode==='echelonne'?l.tranches+' tranches ('+esc(l.freq)+')':'en une fois'}</span>
+  <span>Contact</span><span>${esc(l.tel)} · ${esc(l.adresse)}</span><span>Statut</span><span>${l.membre?'Membre':'Non membre'}</span>${g}
+  <span>Prêt en cours</span><span>${l.enCours?'Oui, reste dû '+fmt(l.restant):'Non'}</span>${l.commentaire?`<span>Remarque</span><span>${esc(l.commentaire)}</span>`:''}${l.decisionNote?`<span>Décision</span><span>${esc(l.decisionNote)}</span>`:''}</div>
+  <div style="display:flex;gap:10px;font-size:12px;color:var(--mut)"><div>Demandeur<img class="sig" src="${esc(l.sigDemandeur)}" alt=""></div>${l.garantId?`<div>Garant${l.sigGarant?`<img class="sig" src="${esc(l.sigGarant)}" alt="">`:'<div class="sig" style="width:100px;display:grid;place-items:center;color:var(--mut)">en attente</div>'}</div>`:''}</div>`;
+  if(mode==='guard')h+=`<canvas id="gp-${l.id}" style="margin-top:10px"></canvas><div class="btns"><button class="btn sec" data-clr="${l.id}">Effacer</button><button class="btn" data-sign="${l.id}">Signer comme garant</button></div>`;
+  if(mode==='all'&&l.status==='attente_decision')h+=`<label>Note du groupe (facultatif)</label><input id="n-${l.id}"><div class="btns"><button class="btn ok" data-dec="accorde" data-id="${l.id}">Accorder</button><button class="btn ko" data-dec="refuse" data-id="${l.id}">Refuser</button></div>`;
+  return h+'</div>';
+}
+const pads={};
+function renderLists(){
+  const mine=loans.filter(l=>l.uid===me.id).sort((a,b)=>b.createdAt-a.createdAt);
+  $('v-mine').innerHTML=mine.map(l=>card(l)).join('')||'<div class="empty">Aucune demande pour le moment.</div>';
+  const gd=loans.filter(l=>l.garantId===me.id&&l.status==='attente_garant');
+  $('v-guard').innerHTML=gd.map(l=>card(l,'guard')).join('')||'<div class="empty">Aucune demande à signer.</div>';
+  gd.forEach(l=>{pads[l.id]=makePad($('gp-'+l.id))});
+  $('v-guard').querySelectorAll('[data-clr]').forEach(b=>b.onclick=()=>pads[b.dataset.clr].clear());
+  $('v-guard').querySelectorAll('[data-sign]').forEach(b=>b.onclick=async()=>{const p=pads[b.dataset.sign];if(p.empty())return msg('Veuillez signer dans le cadre.');
+    try{await db.collection('loans').doc(b.dataset.sign).update({sigGarant:p.data(),status:'attente_decision',garantSignedAt:Date.now()});msg('Signature enregistrée.',true)}catch(e){msg('Échec : '+(e.message||e.code))}});
+  if(admin){
+    const ok=loans.filter(l=>l.status==='accorde');const tot=ok.reduce((s,l)=>s+l.montant,0);
+    $('v-all').innerHTML=`<div class="stats"><div><b>${loans.length}</b><small>Demandes</small></div><div><b>${loans.filter(l=>l.status==='attente_decision').length}</b><small>À décider</small></div><div><b>${fmt(tot)}</b><small>Total accordé</small></div></div>`+
+      [...loans].sort((a,b)=>b.createdAt-a.createdAt).map(l=>card(l,'all')).join('')||'<div class="empty">Aucune demande.</div>';
+    $('v-all').querySelectorAll('[data-dec]').forEach(b=>b.onclick=async()=>{const id=b.dataset.id;
+      try{await db.collection('loans').doc(id).update({status:b.dataset.dec,decisionAt:Date.now(),decisionNote:($('n-'+id).value||'').trim()})}catch(e){msg('Échec : '+(e.message||e.code))}});
+  }
+  renderNav();
+}
+function renderNav(){
+  const n=loans.filter(l=>l.garantId===me.id&&l.status==='attente_garant').length;
+  const items=[['new','Nouvelle demande'],['mine','Mes demandes'],['guard','À signer'+(n?' ('+n+')':'')]];if(admin)items.push(['all','Gestion du groupe']);
+  $('nav').innerHTML=items.map(([k,t])=>`<button class="${tab===k?'on':''}" data-t="${k}">${t}</button>`).join('');
+  $('nav').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.t));
+}
+function go(t){tab=t;['new','mine','guard','all'].forEach(k=>$('v-'+k).classList.toggle('hide',k!==t));renderNav();window.scrollTo(0,0)}
+
+const aerr=m=>$('aerr').textContent=m;
+const mapErr=e=>({'auth/invalid-credential':'Email ou mot de passe incorrect.','auth/email-already-in-use':'Un compte existe déjà avec cet email.','auth/weak-password':'Mot de passe trop court (6 caractères minimum).','auth/invalid-email':'Email invalide.','auth/popup-closed-by-user':'Connexion annulée.'}[e.code]||e.message);
+if(!configured){$('auth').classList.remove('hide');$('cfgwarn').classList.remove('hide')}
+else{
+$('bin').onclick=()=>signInWithEmailAndPassword(auth,$('aemail').value.trim(),$('apwd').value).catch(e=>aerr(mapErr(e)));
+$('bup').onclick=async()=>{ if($('nmwrap').classList.contains('hide')){$('nmwrap').classList.remove('hide');return aerr('Indiquez votre nom, puis cliquez de nouveau sur Créer un compte.')}
+  const n=$('aname').value.trim();if(!n)return aerr('Le nom est obligatoire.');
+  try{const c=await createUserWithEmailAndPassword(auth,$('aemail').value.trim(),$('apwd').value);await updateProfile(c.user,{displayName:n});await setDoc(doc(fs,'users',c.user.uid),{name:n},{merge:true});location.reload()}catch(e){aerr(mapErr(e))}};
+$('bgo').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>aerr(mapErr(e)));
+$('breset').onclick=()=>{const m=$('aemail').value.trim();if(!m)return aerr('Saisissez votre email.');sendPasswordResetEmail(auth,m).then(()=>aerr('Email de réinitialisation envoyé.')).catch(e=>aerr(mapErr(e)))};
+$('bout').onclick=()=>signOut(auth);
+$('bpw').onclick=async()=>{const p=prompt('Nouveau mot de passe (6 caractères minimum) :');if(!p)return;const u=auth.currentUser;
+  try{ if(u.providerData.some(x=>x.providerId==='password'))await updatePassword(u,p); else await linkWithCredential(u,EmailAuthProvider.credential(u.email,p)); msg('Mot de passe enregistré : vous pouvez aussi vous connecter par email.',true)}
+  catch(e){msg(e.code==='auth/requires-recent-login'?'Reconnectez-vous puis réessayez.':mapErr(e))}};
+onAuthStateChanged(auth,async u=>{
+  if(unsub){unsub();unsub=null}
+  if(!u){['app','bar'].forEach(i=>$(i).classList.add('hide'));$('auth').classList.remove('hide');return}
+  $('auth').classList.add('hide');
+  const name=u.displayName||u.email||'Membre';
+  await setDoc(doc(fs,'users',u.uid),{name},{merge:true}).catch(()=>{});
+  me={id:u.uid};
+  const a=await getDoc(doc(fs,'admins',u.uid)).catch(()=>null);admin=!!(a&&a.exists());
+  $('who').textContent=name+(admin?' (administrateur)':'');
+  $('bar').classList.remove('hide');$('app').classList.remove('hide');
+  unsub=db.collection('loans').onSnapshot(s=>{loans=s.docs.map(d=>({id:d.id,...d.data()}));renderLists()},e=>msg('Lecture impossible : '+(e.message||e.code)));
+  renderLists();go('new');
+});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
